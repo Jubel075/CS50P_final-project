@@ -16,7 +16,7 @@ def main():
 def get_component(role):
     """Prompt for a CoolProp fluid name and validate it is recognized"""
     while True:
-        name = input(f"Enter {role} (e.g. Benzene): ").strip
+        name = input(f"Enter {role} (e.g. Benzene): ").strip()
         try:
             PropsSI("Tcrit", name)
             return name
@@ -68,7 +68,53 @@ def get_q():
         except ValueError:
             print("Please enter a number. ")
             
+""" 
+Logic functions:
+    - Calculate relative volatility (alpha)
+    - Calculate equilibrium (y)
+    - Calculate rectifying line
+    - Find feed intersection
+    - Count the total stages
+    - Plot diagram
+"""
 
+def relative_volatility(light, heavy, T):
+    """Return alpha = Psat(light) / Psat(heavy) at given T (K) using CoolProp."""
+    psat_light = PropsSI("P", "T", T, "Q", 0, light)
+    psat_heavy = PropsSI("P", "T", T, "Q", 0, heavy)
+    return psat_light / psat_heavy
 
+def equilibrium_y(x, alpha):
+    """Vapor mole fraction in equilibrium with liquid fraction x, given constant volatility."""
+    return (alpha * x) / (1 + (alpha - 1) * x)
+ 
+# operating lines: 
+def rectifying_line(x, R, xD):
+    """y on the rectifying line at liquid fraction x."""
+    return (R / (R + 1)) * x + (xD / (R + 1))
+
+def stripping_line(x, x_int, y_int, xB):
+    """y on the stripping line at liquid fraction x."""
+    slope = (y_int - xB) / (x_int - xB)
+    return slope * (x - xB) + xB
+
+def feed_intersec(zF, q, R, xD):
+    """Return the (x, y) point where rectifying line and q-line meet
+    q-line:         y = q/(q-1) * x - zF/(q-1)  (q != 1)
+    rectifying:     y = R/(R+1) * x + xD/(R+1)
+    """
+    rect_slope = R / (R + 1)
+    rect_int = xD / (R + 1)
+    
+    # vertical q line at x = zF
+    if q == 1:
+        x = zF
+    else:
+        q_slope = q / (q - 1)
+        q_int = -zF / (q - 1)
+        x = (rect_int - q_int)  / (q_slope - rect_slope)
+    y = rect_slope * x + rect_int
+    
+    return x, y
 if __name__=="__main__":
     main()
