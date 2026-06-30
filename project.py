@@ -1,5 +1,5 @@
 # import matplotlib.pyplot as plt
-import numpy as np
+# import numpy as np
 from CoolProp.CoolProp import PropsSI
 
 
@@ -22,16 +22,16 @@ def main():
     x_int, y_int = feed_intersec(zF, q, R, xD)
     print(f"Feed intersection: {x_int}, {y_int}")
 
-    # find striping line
-    for x in np.arange(0.0, 1.0, 0.1):
-        print(f"Strippping line: {x}, {stripping_line(x, x_int, y_int, xB)}")
+    # count theoretical stages
+    stages = count_stages(alpha, xD, xB, x_int, y_int, R)
+    print(f"Theoretical stages: {stages}")
 
 
 # get user inputs functions
 def get_component(role):
     """Prompt for a CoolProp fluid name and validate it is recognized"""
     while True:
-        name = input(f"Enter {role} (e.g. Benzene): ").strip()
+        name = input(f"Enter {role} (e.g. Benzene or Toluene): ").strip()
         try:
             PropsSI("Tcrit", name)
             return name
@@ -112,6 +112,11 @@ def equilibrium_y(x, alpha):
     return (alpha * x) / (1 + (alpha - 1) * x)
 
 
+def inverse_equilibrium(y, alpha):
+    """Liquid mole fraction x in equilibrium with vapor fraction y (inverse of equilibrium_y)."""
+    return y / (alpha - (alpha - 1) * y)
+
+
 # operating lines:
 def rectifying_line(x, R, xD):
     """y on the rectifying line at liquid fraction x."""
@@ -144,9 +149,24 @@ def feed_intersec(zF, q, R, xD):
     return x, y
 
 
-def count_stages(alpha, xD, zF, q, R):
-    """Stepping loop for the staircase, return n amount of stages."""
-    ...
+def count_stages(alpha, xD, xB, x_int, y_int, R):
+    """Step off the McCabe-Thiele staircase from (xD, xD) down to xB; return stage count.
+
+    Each iteration: step horizontally to the equilibrium curve (one theoretical stage),
+    then vertically down to the rectifying line (above the feed) or stripping line (below).
+    """
+    stages = 0
+    x, y = xD, xD
+    while x > xB and stages < 100:
+        # horizontal step to the equilibrium curve -> one stage
+        x = inverse_equilibrium(y, alpha)
+        stages += 1
+        # vertical step down to the correct operating line
+        if x > x_int:
+            y = rectifying_line(x, R, xD)
+        else:
+            y = stripping_line(x, x_int, y_int, xB)
+    return stages
 
 
 def plot_diagram():
