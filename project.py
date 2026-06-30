@@ -5,8 +5,8 @@ from CoolProp.CoolProp import PropsSI
 
 def main():
     # get user inputs
-    light = get_component("light componnet")
-    heavy = get_component("heavy componnet")
+    light = get_component("light componnet", "Benzene")
+    heavy = get_component("heavy componnet", "Toluene")
     T = get_temperature()
     xD = get_fraction("distillate purity xD")
     xB = get_fraction("buttoms purity xB")
@@ -28,10 +28,10 @@ def main():
 
 
 # get user inputs functions
-def get_component(role):
+def get_component(role, example):
     """Prompt for a CoolProp fluid name and validate it is recognized"""
     while True:
-        name = input(f"Enter {role} (e.g. Benzene or Toluene): ").strip()
+        name = input(f"Enter {role} (e.g. {example}): ").strip()
         try:
             PropsSI("Tcrit", name)
             return name
@@ -157,7 +157,8 @@ def count_stages(alpha, xD, xB, x_int, y_int, R):
     """
     stages = 0
     x, y = xD, xD
-    while x > xB and stages < 100:
+    # added precision error handling 
+    while x > (xB + 1e-9) and stages <= 100:
         # horizontal step to the equilibrium curve -> one stage
         x = inverse_equilibrium(y, alpha)
         stages += 1
@@ -166,6 +167,10 @@ def count_stages(alpha, xD, xB, x_int, y_int, R):
             y = rectifying_line(x, R, xD)
         else:
             y = stripping_line(x, x_int, y_int, xB)
+            
+    # implement error for >= 100 stages
+    if stages == 100: 
+        return "Infinite stages, check your input variables"
     return stages
 
 
