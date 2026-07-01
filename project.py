@@ -23,7 +23,11 @@ def main():
     print(f"Feed intersection: {x_int}, {y_int}")
 
     # count theoretical stages
-    stages = count_stages(alpha, xD, xB, x_int, y_int, R)
+    try:
+        stages = count_stages(alpha, xD, xB, x_int, y_int, R)
+    except ValueError as e:
+        print(f"Error: {e}")
+        return
     print(f"Theoretical stages: {stages}")
 
 
@@ -155,10 +159,11 @@ def count_stages(alpha, xD, xB, x_int, y_int, R):
     Each iteration: step horizontally to the equilibrium curve (one theoretical stage),
     then vertically down to the rectifying line (above the feed) or stripping line (below).
     """
+    MAX_STAGES = 100
     stages = 0
     x, y = xD, xD
-    # added precision error handling 
-    while x > (xB + 1e-9) and stages <= 100:
+    # added precision error handling
+    while x > (xB + 1e-9) and stages < MAX_STAGES:
         # horizontal step to the equilibrium curve -> one stage
         x = inverse_equilibrium(y, alpha)
         stages += 1
@@ -167,10 +172,12 @@ def count_stages(alpha, xD, xB, x_int, y_int, R):
             y = rectifying_line(x, R, xD)
         else:
             y = stripping_line(x, x_int, y_int, xB)
-            
-    # implement error for >= 100 stages
-    if stages == 100: 
-        return "Infinite stages, check your input variables"
+
+    # loop only exits at MAX_STAGES without converging if the staircase never reaches xB
+    if stages >= MAX_STAGES:
+        raise ValueError(
+            f"Column did not converge within {MAX_STAGES} stages; check R, q, xD, xB and alpha."
+        )
     return stages
 
 
