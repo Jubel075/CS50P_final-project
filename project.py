@@ -1,5 +1,5 @@
 # import matplotlib.pyplot as plt
-# import numpy as np
+import numpy as np
 from CoolProp.CoolProp import PropsSI
 
 
@@ -181,9 +181,23 @@ def count_stages(alpha, xD, xB, x_int, y_int, R):
     return stages
 
 
-def plot_diagram():
+def plot_diagram(alpha, xD, xB, x_int, y_int, R):
     """Draw curves, lines and staircase; save to pdf."""
-    ...
+    # equilibrium curve over the full composition range
+    x_eq = np.linspace(0, 1, 200)
+    y_eq = equilibrium_y(x_eq, alpha)
+
+    # y = x reference (diagonal) line
+    x_diag = np.linspace(0, 1, 2)
+    y_diag = x_diag
+
+    # rectifying line: from the feed intersection up to (xD, xD)
+    x_rect = np.linspace(x_int, xD, 100)
+    y_rect = rectifying_line(x_rect, R, xD)
+
+    # stripping line: from (xB, xB) up to the feed intersection
+    x_strip = np.linspace(xB, x_int, 100)
+    y_strip = stripping_line(x_strip, x_int, y_int, xB)
 
 
 if __name__ == "__main__":
