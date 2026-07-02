@@ -1,4 +1,4 @@
-# import matplotlib.pyplot as plt
+import matplotlib.pyplot as plt
 import numpy as np
 from CoolProp.CoolProp import PropsSI
 
@@ -30,16 +30,19 @@ def main():
         return
     print(f"Theoretical stages: {stages}")
 
+    # plot the McCabe-Thiele diagram
+    plot_diagram(alpha, xD, xB, x_int, y_int, R)
+
 
 # get user inputs functions
-def get_component(role, example):
+def get_component(role, example="a valid fluid name"):
     """Prompt for a CoolProp fluid name and validate it is recognized"""
     while True:
         name = input(f"Enter {role} (e.g. {example}): ").strip()
         try:
             PropsSI("Tcrit", name)
             return name
-        except (ValueError, RuntimeError):
+        except ValueError, RuntimeError:
             print(
                 f"Unknown fluid '{name}'. Try a CoolProp name like Benzene or Toluene."
             )
@@ -198,6 +201,22 @@ def plot_diagram(alpha, xD, xB, x_int, y_int, R):
     # stripping line: from (xB, xB) up to the feed intersection
     x_strip = np.linspace(xB, x_int, 100)
     y_strip = stripping_line(x_strip, x_int, y_int, xB)
+
+    fig, ax = plt.subplots()
+
+    ax.plot(x_eq, y_eq, label="Equilibrium curve")
+    ax.plot(x_diag, y_diag, "k--", label="y = x")
+    ax.plot(x_rect, y_rect, label="Rectifying line")
+    ax.plot(x_strip, y_strip, label="Stripping line")
+
+    ax.set_xlim(0, 1)
+    ax.set_ylim(0, 1)
+    ax.set_xlabel("x (liquid mole fraction)")
+    ax.set_ylabel("y (vapor mole fraction)")
+    ax.set_title("McCabe-Thiele Diagram")
+    ax.legend()
+
+    fig.savefig("mccabe_thiele.pdf")
 
 
 if __name__ == "__main__":
